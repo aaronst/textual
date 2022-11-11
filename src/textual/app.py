@@ -7,7 +7,6 @@ import os
 import platform
 import sys
 import threading
-import unicodedata
 import warnings
 from asyncio import Task
 from contextlib import asynccontextmanager, redirect_stderr, redirect_stdout
@@ -55,7 +54,7 @@ from .drivers.headless_driver import HeadlessDriver
 from .features import FeatureFlag, parse_features
 from .file_monitor import FileMonitor
 from .geometry import Offset, Region, Size
-from .keys import REPLACED_KEYS
+from .keys import _get_key_char
 from .messages import CallbackType
 from .reactive import Reactive
 from .renderables.blank import Blank
@@ -703,19 +702,7 @@ class App(Generic[ReturnType], DOMNode):
                 print(f"(pause {wait_ms}ms)")
                 await asyncio.sleep(float(wait_ms) / 1000)
             else:
-                if len(key) == 1 and not key.isalnum():
-                    key = (
-                        unicodedata.name(key)
-                        .lower()
-                        .replace("-", "_")
-                        .replace(" ", "_")
-                    )
-                original_key = REPLACED_KEYS.get(key, key)
-                char: str | None
-                try:
-                    char = unicodedata.lookup(original_key.upper().replace("_", " "))
-                except KeyError:
-                    char = key if len(key) == 1 else None
+                char = _get_key_char(key)
                 print(f"press {key!r} (char={char!r})")
                 key_event = events.Key(app, key, char)
                 driver.send_event(key_event)
@@ -877,7 +864,8 @@ class App(Generic[ReturnType], DOMNode):
                 stylesheet.parse()
                 elapsed = (perf_counter() - time) * 1000
                 self.log.system(
-                    f"<stylesheet> loaded {len(css_paths)} CSS files in {elapsed:.0f} ms"
+                    f"<stylesheet> loaded {len(css_paths)} CSS files in"
+                    f" {elapsed:.0f} ms"
                 )
             except Exception as error:
                 # TODO: Catch specific exceptions
@@ -1436,7 +1424,6 @@ class App(Generic[ReturnType], DOMNode):
 
         # If we don't already know about this widget...
         if child not in self._registry:
-
             # Now to figure out where to place it. If we've got a `before`...
             if before is not None:
                 # ...it's safe to NodeList._insert before that location.
@@ -1755,7 +1742,8 @@ class App(Generic[ReturnType], DOMNode):
 
         if private_method is None and public_method is None:
             log(
-                f"<action> {action_name!r} has no target. Couldn't find methods {public_method_name!r} or {private_method_name!r}"
+                f"<action> {action_name!r} has no target. Couldn't find methods"
+                f" {public_method_name!r} or {private_method_name!r}"
             )
 
         if callable(private_method):

@@ -6,6 +6,7 @@ from typing import Iterable, MutableMapping
 import rich.repr
 
 from textual._typing import TypeAlias
+from textual.keys import _get_key_char
 
 BindingType: TypeAlias = "Binding | tuple[str, str, str]"
 
@@ -33,6 +34,10 @@ class Binding:
     universal: bool = False
     """Allow forwarding from app to focused widget."""
 
+    def __post_init__(self) -> None:
+        if self.key_display is None:
+            object.__setattr__(self, "key_display", _get_key_char(self.key))
+
 
 @rich.repr.auto
 class Bindings:
@@ -45,7 +50,8 @@ class Bindings:
                 if isinstance(binding, tuple):
                     if len(binding) != 3:
                         raise BindingError(
-                            f"BINDINGS must contain a tuple of three strings, not {binding!r}"
+                            "BINDINGS must contain a tuple of three strings, not"
+                            f" {binding!r}"
                         )
                     binding = Binding(*binding)
 

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from enum import Enum
 
+import unicodedata
+
 
 # Adapted from prompt toolkit https://github.com/prompt-toolkit/python-prompt-toolkit/blob/master/prompt_toolkit/keys.py
 class Keys(str, Enum):
@@ -223,3 +225,17 @@ KEY_ALIASES = {
 def _get_key_aliases(key: str) -> list[str]:
     """Return all aliases for the given key, including the key itself"""
     return [key] + KEY_ALIASES.get(key, [])
+
+
+def _get_key_char(key: str) -> str | None:
+    """Return a printable char for the given key or None if it is not printable."""
+
+    if len(key) == 1 and not key.isalnum():
+        key = unicodedata.name(key).lower().replace("-", "_").replace(" ", "_")
+
+    original_key = REPLACED_KEYS.get(key, key)
+
+    try:
+        return unicodedata.lookup(original_key.upper().replace("_", " "))
+    except KeyError:
+        return key if len(key) == 1 else None
